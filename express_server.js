@@ -6,7 +6,6 @@ const bcrypt = require('bcrypt');
 const session = require('express-session');
 
 
-
 app.set("view engine", "ejs");
 
 app.use(express.urlencoded({ extended: true }));
@@ -16,7 +15,7 @@ app.use(session({
   resave: false,
   saveUninitialized: true
 }));
-
+//generate random string
 function generateRandomString() {
   let genRes = '';
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -64,20 +63,18 @@ const getUserByEmail = function(email, users) {
   return null;
 };
 
+//POST
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = { longURL: longURL, userID: req.cookies.user_id };
   res.redirect(`/urls/${shortURL}`, 302, { user: users[req.cookies.user_id] });
 });
+
+// HOME
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-
 app.get("/urls", (req, res) => {
   const userId = req.session.user_id;
   const userURL = urlsForUser(userId, urlDatabase);
@@ -89,7 +86,12 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+// URLS JSON
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
 
+// URLS NEW
 app.get("/urls/new", (req, res) => {
   const userId = req.session.user_id;
   const userURL = urlsForUser(userId, urlDatabase);
@@ -100,29 +102,20 @@ app.get("/urls/new", (req, res) => {
   };
   res.render("urls_new", templateVars);
 });
+
+// URLS generated id
 app.get("/urls/:id", (req, res) => {
-  const user = users[req.cookies.user_id];
+  //const user = users[req.cookies.user_id];
   const id = req.params.id;
-  const longURL = urlDatabase[id].longURL;
-  const templateVars = { user, id, longURL };
+  //const longURL = urlDatabase[id].longURL;
+  const templateVars = {
+    user: users[req.session.user_id],
+    id: req.params.id,
+    longURL: urlDatabase[req.params.id].longURL,
+    userID: urlDatabase[req.params.id].userID,
+    urls: urlDatabase,
+  };
   res.render("urls_show", templateVars);
-});
-
-
-app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
-  res.redirect(longURL);
-});
-
-app.get('/register', (req, res) => {
-  const user_id = req.session.user_id;
-  res.render('register', { user_id });
-});
-
-app.post("/urls/:id/delete", (req, res) => {
-  const shortURL = req.params.id;
-  delete urlDatabase[shortURL];
-  res.redirect("/urls");
 });
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
@@ -133,29 +126,17 @@ app.post("/urls/:id", (req, res) => {
   urlDatabase[shortURL].longURL = req.body.longURL;
   res.redirect("/urls", 302, { user: users[req.cookies.user_id] });
 });
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  res.redirect(longURL);
+});
 
-app.get('/login', (req, res) => {
+
+// Register
+app.get('/register', (req, res) => {
   const user_id = req.session.user_id;
-  res.render('login', { user_id });
+  res.render('register', { user_id });
 });
-app.post("/login", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-
-  const user = getUserByEmail(email, users);
-  if (!user) {
-    return res.status(403).send("Invalid email or password");
-  }
-
-  if (!bcrypt.compareSync(password, user.password)) {
-    return res.status(403).send("Invalid email or password");
-  }
-
-  res.cookie("user_id", user.id);
-  res.redirect("/urls");
-});
-
-
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -175,14 +156,39 @@ app.post("/register", (req, res) => {
   console.log(users);
 });
 
+// Delete
+app.post("/urls/:id/delete", (req, res) => {
+  const shortURL = req.params.id;
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
+});
 
+// Login
+app.get('/login', (req, res) => {
+  const user_id = req.session.user_id;
+  res.render('login', { user_id });
+});
+app.post("/login", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const user = getUserByEmail(email, users);
+  if (!user) {
+    return res.status(403).send("Invalid email or password");
+  }
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.status(403).send("Invalid email or password");
+  }
+  res.cookie("user_id", user.id);
+  res.redirect("/urls");
+});
+
+// Logout
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
   res.redirect("/login");
 });
 
-
-
+// Listen
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
