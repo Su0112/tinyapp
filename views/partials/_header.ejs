@@ -17,11 +17,24 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
-      <form class="form-inline ml-auto" method="POST" action="/login">
+      <% if (username) { %>
+      <span class="navbar-text" style="margin-right: 1rem; color: black"
+        >Logged in as: <%= username %></span
+      >
+      <form class="form-inline" method="POST" action="/logout">
+        <button
+          type="submit"
+          class="btn btn-outline-light"
+          style="color: black; border-color: black"
+        >
+          Logout
+        </button>
+      </form>
+      <% } else { %>
+      <form class="form-inline" method="POST" action="/login">
         <div class="form-group">
           <label for="username" class="sr-only">Username</label>
           <input
-            style="margin-right: 1rem"
             type="text"
             class="form-control"
             id="username"
@@ -31,6 +44,7 @@
         </div>
         <button type="submit" class="btn btn-light">Login</button>
       </form>
+      <% } %>
     </div>
   </nav>
 </header>
