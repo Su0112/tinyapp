@@ -40,8 +40,8 @@ app.use(express.urlencoded({ extended: true }));
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = longURL;
-  res.redirect(`/urls/${shortURL}`);
+  urlDatabase[shortURL] = { longURL: longURL, userID: req.cookies.user_id };
+  res.redirect(`/urls/${shortURL}`, 302, { user: users[req.cookies.user_id] });
 });
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -50,14 +50,25 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 app.get("/urls", (req, res) => {
-  const templateVars = { username: req.cookies["username"], urls: urlDatabase };
+  const templateVars = {
+    user: users[req.cookies.user_id],
+    urls: urlsForUser(req.cookies["user_id"], urlDatabase)
+  };
   res.render("urls_index", templateVars);
 });
+
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    user: users[req.cookies.user_id],
+    urls: urlDatabase,
+  };
+  res.render("urls_new", templateVars);
 });
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = {
+    user: users[req.cookies.user_id],
+    urls: urlDatabase,
+  };;
   res.render("urls_show", templateVars);
 });
 app.get("/u/:id", (req, res) => {
@@ -74,10 +85,14 @@ app.post("/urls/:id/delete", (req, res) => {
 });
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
-  const longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL;
-  res.redirect("/urls");
+  const userID = req.cookies.user_id;
+  if (userID !== urlDatabase[shortURL].userID) {
+    return res.status(403).send("Access Denied");
+  }
+  urlDatabase[shortURL].longURL = req.body.longURL;
+  res.redirect("/urls", 302, { user: users[req.cookies.user_id] });
 });
+
 app.post("/login", (req, res) => {
   const username = req.body.username;
   res.cookie("username", username);
