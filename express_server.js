@@ -117,36 +117,24 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls", 302, { user: users[req.cookies.user_id] });
 });
 
+
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
   const user = getUserByEmail(email, users);
   if (!user) {
-    return res.status(401).send("Invalid email or password");
+    return res.status(403).send("Invalid email or password");
   }
 
   if (!bcrypt.compareSync(password, user.password)) {
-    return res.status(401).send("Invalid email or password");
+    return res.status(403).send("Invalid email or password");
   }
 
-  req.session = {};
-
-  req.session.user_id = user.id;
-
-  if (req.session) {
-    req.session.user_id = user.id;
-  } else {
-    console.log('req.session is undefined');
-  }
-
+  res.cookie("user_id", user.id);
   res.redirect("/urls");
 });
 
-app.post("/logout", (req, res) => {
-  res.clearCookie("username");
-  res.redirect("/urls");
-});
 
 app.post("/register", (req, res) => {
   const email = req.body.email;
@@ -166,6 +154,11 @@ app.post("/register", (req, res) => {
   }
   console.log(users);
 });
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+
 
 
 app.listen(PORT, () => {
