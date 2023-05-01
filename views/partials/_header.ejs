@@ -16,35 +16,24 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-      </div>
-      <% if (username) { %>
-      <span class="navbar-text" style="margin-right: 1rem; color: black"
-        >Logged in as: <%= username %></span
-      >
-      <form class="form-inline" method="POST" action="/logout">
-        <button
-          type="submit"
-          class="btn btn-outline-light"
-          style="color: black; border-color: black"
+        <% if (!username) { %>
+        <a class="nav-item nav-link" href="/register">Register</a>
+        <a class="nav-item nav-link" href="/login">Login</a>
+        <% } else { %>
+        <span class="navbar-text" style="margin-right: 1rem; color: black"
+          >Logged in as: <%= username %></span
         >
-          Logout
-        </button>
-      </form>
-      <% } else { %>
-      <form class="form-inline" method="POST" action="/login" style="display: flex; justify-content: end; gap: 1rem;"">
-        <div class="form-group">
-          <label for="username" class="sr-only">Username</label>
-          <input
-            type="text"
-            class="form-control"
-            id="username"
-            name="username"
-            placeholder="Username"
-          />
-        </div>
-        <button type="submit" class="btn btn-light">Login</button>
-      </form>
-      <% } %>
+        <form class="form-inline" method="POST" action="/logout">
+          <button
+            type="submit"
+            class="btn btn-outline-light"
+            style="color: black; border-color: black"
+          >
+            Logout
+          </button>
+        </form>
+        <% } %>
+      </div>
     </div>
   </nav>
 </header>
