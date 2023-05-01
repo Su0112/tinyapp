@@ -87,6 +87,15 @@ app.post("/logout", (req, res) => {
   res.clearCookie("username");
   res.redirect("/urls");
 });
+app.post('/register', (req, res) => {
+  const { email, password } = req.body;
+  const id = generateRandomString();
+  const newUser = { id, email, password };
+  users[id] = newUser;
+  console.log(newUser);
+  res.cookie('user_id', id);
+  res.redirect('/urls');
+});
 
 
 app.listen(PORT, () => {
