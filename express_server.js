@@ -2,11 +2,20 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = 8080;
+const bcrypt = require('bcrypt');
+const session = require('express-session');
+
+
 
 app.set("view engine", "ejs");
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(session({
+  secret: "your-secret-key",
+  resave: false,
+  saveUninitialized: true
+}));
 
 function generateRandomString() {
   let genRes = '';
@@ -45,6 +54,15 @@ const users = {
     password: "dishwasher-funk",
   },
 };
+//user by email
+const getUserByEmail = function(email, users) {
+  for (const userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  return null;
+};
 
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
@@ -63,8 +81,6 @@ app.get("/urls", (req, res) => {
   const urls = urlsForUser(req.cookies.user_id, urlDatabase);
   res.render("urls_index", { urls, user, username: user ? user.email : null });
 });
-
-
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.cookies.user_id],
@@ -102,22 +118,53 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const username = req.body.username;
-  res.cookie("username", username);
+  const email = req.body.email;
+  const password = req.body.password;
+
+  const user = getUserByEmail(email, users);
+  if (!user) {
+    return res.status(401).send("Invalid email or password");
+  }
+
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.status(401).send("Invalid email or password");
+  }
+
+  req.session = {};
+
+  req.session.user_id = user.id;
+
+  if (req.session) {
+    req.session.user_id = user.id;
+  } else {
+    console.log('req.session is undefined');
+  }
+
   res.redirect("/urls");
 });
+
 app.post("/logout", (req, res) => {
   res.clearCookie("username");
   res.redirect("/urls");
 });
-app.post('/register', (req, res) => {
-  const { email, password } = req.body;
-  const id = generateRandomString();
-  const newUser = { id, email, password };
-  users[id] = newUser;
-  console.log(newUser);
-  res.cookie('user_id', id);
-  res.redirect('/urls');
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  if (email === "" || password === "") {
+    res.status(400).send("Error: Email and password cannot be empty");
+  } else if (getUserByEmail(email, users)) {
+    res.status(400).send("Error: Email exists");
+  } else {
+    const id = generateRandomString();
+    const newUser = { id, email, password };
+    users[id] = newUser;
+    users[id] = { id: id, email: email, password: bcrypt.hashSync(password, 10) };
+    req.session.user_id = id;
+    res.cookie('user_id', id);
+    res.redirect("/urls");
+  }
+  console.log(users);
 });
 
 
