@@ -16,14 +16,14 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <% if (!user_id) { %>
+        <% if (!user) { %>
         <span class="navbar-text" style="margin-right: 1rem"
           ><a href="/login">Login</a></span
         >
         <span class="navbar-text"><a href="/register">Register</a></span>
         <% } else { %>
         <span class="navbar-text" style="margin-right: 1rem; color: black">
-          Logged in as: <%= users[user_id].email %>
+          Logged in as: <%= user.email %>
         </span>
         <form class="form-inline" method="POST" action="/logout">
           <button
