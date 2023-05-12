@@ -59,10 +59,19 @@ const users = {
   },
 };
 //user by email
-const getUserByEmail = function(email, users) {
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
+// const getUserByEmail = function(email, users) {
+//   for (const userId in users) {
+//     if (users[userId].email === email) {
+//       return users[userId];
+//     }
+//   }
+//   return null;
+// };
+
+const getUserByEmail = (email, database) => {
+  for (const userId in database) {
+    if (database[userId].email === email) {
+      return database[userId];
     }
   }
   return null;
@@ -237,6 +246,8 @@ app.post("/login", (req, res) => {
   req.session.user_id = user.id;
   res.redirect("/urls");
 });
+
+
 
 // Logout
 app.post("/logout", (req, res) => {
