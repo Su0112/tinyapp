@@ -3,6 +3,7 @@ const app = express();
 const PORT = 8080;
 const bcrypt = require('bcryptjs');
 const cookieSession = require('cookie-session');
+const { getUserByEmail } = require('./helpers');
 
 app.use(cookieSession({
   name: 'session',
@@ -57,24 +58,6 @@ const users = {
     email: "user2@example.com",
     password: "dishwasher-funk",
   },
-};
-//user by email
-// const getUserByEmail = function(email, users) {
-//   for (const userId in users) {
-//     if (users[userId].email === email) {
-//       return users[userId];
-//     }
-//   }
-//   return null;
-// };
-
-const getUserByEmail = (email, database) => {
-  for (const userId in database) {
-    if (database[userId].email === email) {
-      return database[userId];
-    }
-  }
-  return null;
 };
 
 //POST
