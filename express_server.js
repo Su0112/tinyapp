@@ -101,7 +101,7 @@ app.get("/urls", (req, res) => {
 
 app.post('/urls', (req, res) => {
   if (!req.session.user_id) {
-    return res.send("You must login");
+    return res.send("Please login");
   }
 
   if (!isValidUrl(req.body.longURL)) {
@@ -131,7 +131,11 @@ app.get("/urls/new", (req, res) => {
     user: users[userId],
     urls: userURL,
   };
-  res.render("urls_new", templateVars);
+  if (userId) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 // URLS generated id
