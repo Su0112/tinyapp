@@ -67,14 +67,6 @@ const getUserByEmail = function(email, users) {
   }
   return null;
 };
-//require login to change
-// const requireLogin = (req, res, next) => {
-//   if (!req.cookies.user_id) {
-//     res.redirect('/login');
-//   } else {
-//     next();
-//   }
-// };
 
 //POST
 app.post("/urls", (req, res) => {
@@ -86,7 +78,12 @@ app.post("/urls", (req, res) => {
 
 // HOME
 app.get("/", (req, res) => {
-  res.send("Hello!"); // this needs to change
+  const userId = req.session.user_id;
+  if (userId) {
+    return res.redirect("/urls");
+  }
+
+  res.redirect("/login");
 });
 
 app.get("/urls", (req, res) => {
