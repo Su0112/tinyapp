@@ -32,6 +32,10 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
   const userId = req.session.user_id;
   // Retrieve URLs for the current user
+  if (!userId) {
+    // Return an error if the user is not logged in
+    return res.status(401).send("You must be logged in to view this page.");
+  }
   const userURL = urlsForUser(userId, urlDatabase);
   const templateVars = {
     user: users[userId],
