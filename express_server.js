@@ -1,39 +1,21 @@
+//requires
 const express = require("express");
-const app = express();
-const PORT = 8080;
 const bcrypt = require('bcryptjs');
 const cookieSession = require('cookie-session');
-const { getUserByEmail } = require('./helpers');
-
+const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers');
+//initialization
+const PORT = 8080;
+const app = express();
+//configuration
+app.set("view engine", "ejs");
+//middleware
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',
   keys: ["key1"],
   maxAge: 24 * 60 * 60 * 1000
 }));
-
-app.set("view engine", "ejs");
-app.use(express.urlencoded({ extended: true }));
-
-//generate random string
-function generateRandomString() {
-  let genRes = '';
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const charsLength = chars.length;
-  for (let i = 0; i < 6; i++) {
-    genRes += chars.charAt(Math.floor(Math.random() * charsLength));
-  }
-  return genRes;
-}
-//urls for users
-function urlsForUser(id, urlDatabase) {
-  const filteredUrls = {};
-  for (const shortUrl in urlDatabase) {
-    if (urlDatabase[shortUrl].userID === id) {
-      filteredUrls[shortUrl] = urlDatabase[shortUrl].longURL;
-    }
-  }
-  return filteredUrls;
-}
+//database
 //URLs
 const urlDatabase = {
   b6UTxQ: {
@@ -58,22 +40,13 @@ const users = {
     password: "dishwasher-funk",
   },
 };
-
-//POST
-app.post("/urls", (req, res) => {
-  const longURL = req.body.longURL;
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = { longURL: longURL, userID: req.session.user_id };
-  res.redirect(`/urls/${shortURL}`, 302, { user: users[req.session.user_id] });
-});
-
+//routes
 // HOME
 app.get("/", (req, res) => {
   const userId = req.session.user_id;
   if (userId) {
     return res.redirect("/urls");
   }
-
   res.redirect("/login");
 });
 // landing page
@@ -86,18 +59,23 @@ app.get("/urls", (req, res) => {
   };
   res.render("urls_index", templateVars);
 });
-app.post('/urls', (req, res) => {
-  if (!req.session.user_id) {
-    return res.send("Please login");
-  }
-
-  if (!isValidUrl(req.body.longURL)) {
-    return res.status(400).send('Invalid URL');
-  }
-  const shortURL = generateRandomString();
+app.post("/urls", (req, res) => {
+  const id = generateRandomString();
+  const longURL = req.body.longURL;
   const userID = req.session.user_id;
-  urlDatabase[shortURL] = { longURL: req.body.longURL, userID };
-  res.redirect(`/urls/${shortURL}`);
+  if (userID) {
+    urlDatabase[id] = {
+      longURL,
+      userID,
+    };
+    res.redirect(`/urls/${id}`);
+  } else {
+    res
+      .status(400)
+      .send(
+        "Register or login!"
+      );
+  }
 });
 
 // URLS JSON
@@ -125,30 +103,44 @@ app.get("/urls/new", (req, res) => {
 
 // URLS generated id
 app.get("/urls/:id", (req, res) => {
+  if (urlDatabase[req.params.id].userID !== req.session.user_id) {
+    return res.status(403).send("This URL is not yours!");
+  }
   const templateVars = {
     user: users[req.session.user_id],
     id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
+    userID: urlDatabase[req.params.id].userID,
+    urls: urlDatabase,
   };
   res.render("urls_show", templateVars);
 });
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
+  const longURL = req.body.longURL;
   const userID = req.session.user_id;
-  if (userID !== urlDatabase[shortURL].userID) {
-    return res.status(403).send("Access Denied");
+
+  if (urlDatabase.hasOwnProperty(shortURL)) {
+    const url = urlDatabase[shortURL];
+
+    if (url.userID === userID) {
+      urlDatabase[shortURL].longURL = longURL;
+    } else {
+      res.status(403).send("No permission to edit this URL");
+    }
   }
-  urlDatabase[shortURL].longURL = req.body.longURL;
-  res.redirect("/urls", 302, { user: users[req.session.user_id] });
+  res.redirect("/urls");
 });
 // edit page
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
-  const longURL = urlDatabase[id];
-  if (longURL) {
-    res.redirect(longURL);
+  const item = urlDatabase[id];
+
+  if (!item) {
+    return res.status(404).send("<h1>404 Not Found</h1><p>The requested URL does not exist.</p>");
   } else {
-    res.status(404).send("<h1>404 Not Found</h1><p>The requested URL does not exist.</p>");
+    const longURL = item.longURL;
+    res.redirect(longURL);
   }
 });
 
