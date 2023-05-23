@@ -138,6 +138,20 @@ app.get("/u/:id", (req, res) => {
 // Delete
 app.post("/urls/:id/delete", (req, res) => {
   const shortURL = req.params.id;
+  const userID = req.session.user_id;
+  if (!userID) {
+    // Return an error if the user is not logged in
+    return res.status(401).send("Login to perform this action!");
+  }
+  if (!urlDatabase.hasOwnProperty(shortURL)) {
+    // Return an error if the shortURL is not found in the urlDatabase
+    return res.status(404).send("URL does not exist!");
+  }
+  const url = urlDatabase[shortURL];
+  if (url.userID !== userID) {
+    // Return an error if the user is not authorized to delete the URL
+    return res.status(403).send("You have no permission to delete this URL.");
+  }
   // Delete the URL from the database
   delete urlDatabase[shortURL];
   res.redirect("/urls");
